@@ -1,7 +1,7 @@
 import {
   Controller, Get, Post, Put, Delete,
   Param, Body, NotFoundException, BadRequestException,
-  InternalServerErrorException
+  InternalServerErrorException, Query
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
@@ -11,14 +11,31 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
-  async findAll() {
+  async findAll(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10'
+  ) {
     try {
+      const pageNum = parseInt(page, 10) || 1;
+      const limitNum = parseInt(limit, 10) || 10;
+      
       const categories = await this.categoriesService.findAll();
+      
+      // Aplicar paginación manualmente ya que no está implementada en el servicio
+      const startIndex = (pageNum - 1) * limitNum;
+      const endIndex = startIndex + limitNum;
+      const paginatedCategories = categories.slice(startIndex, endIndex);
+      
       return {
         success: true,
         message: 'Categories retrieved successfully',
-        data: categories,
-        count: categories.length
+        data: paginatedCategories,
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(categories.length / limitNum),
+          totalItems: categories.length,
+          itemsPerPage: limitNum
+        }
       };
     } catch (error) {
       console.error('Error fetching categories:', error);
