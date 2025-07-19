@@ -1,13 +1,11 @@
 import { Controller, Get, Query, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { SearchService } from './search.service';
-import { AnalyticsService } from '../analytics/analytics.service';
 
 @Controller('search')
 export class SearchController {
   constructor(
     private readonly searchService: SearchService,
-    private readonly analyticsService: AnalyticsService
   ) {}
 
   @Get('products')
@@ -29,13 +27,15 @@ export class SearchController {
 
   @Get('stats')
   async getStats() {
-    // Get both PostgreSQL stats and MongoDB analytics
+    // Get PostgreSQL stats only (MongoDB analytics temporarily disabled)
     const pgStats = await this.searchService.getStats();
-    const mongoStats = await this.analyticsService.getSearchStats();
     
     return {
       ...pgStats,
-      analytics: mongoStats
+      analytics: {
+        totalSearches: 0,
+        topQueries: []
+      }
     };
   }
 }

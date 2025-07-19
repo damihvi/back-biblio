@@ -5,7 +5,6 @@ import { Product } from '../products/product.entity';
 import { Category } from '../categories/category.entity';
 import { User } from '../users/user.entity';
 import { Order } from '../orders/order.entity';
-import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class SearchService {
@@ -18,7 +17,6 @@ export class SearchService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
-    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async searchProducts(query?: string, categoryId?: string, userAgent?: string, ip?: string): Promise<Product[]> {
@@ -35,8 +33,8 @@ export class SearchService {
         order: { name: 'ASC' }
       });
       
-      // Log search analytics
-      await this.analyticsService.logSearch(query, categoryId, results.length, userAgent, ip);
+      // TODO: Log search analytics (temporarily disabled)
+      // await this.analyticsService.logSearch(query, categoryId, results.length, userAgent, ip);
       
       return results;
     }
