@@ -43,8 +43,8 @@ export class UsersController {
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
-    if (!createUserDto.email || !createUserDto.name || !createUserDto.password) {
-      throw new BadRequestException('Email, name and password are required');
+    if (!createUserDto.email || !createUserDto.username || !createUserDto.password) {
+      throw new BadRequestException('Email, username and password are required');
     }
     if (createUserDto.password.length < 6) {
       throw new BadRequestException('Password must be at least 6 characters');

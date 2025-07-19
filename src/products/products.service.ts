@@ -34,14 +34,14 @@ export class ProductsService {
   }
 
   async create(createProductDto: CreateProductDto): Promise<Product | null> {
-    const slug = createProductDto.name.toLowerCase()
+    const sku = createProductDto.name.toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
     const product = this.productRepo.create({
       ...createProductDto,
-      slug,
+      sku,
       isActive: true
     });
 

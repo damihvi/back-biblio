@@ -1,6 +1,6 @@
 export interface CreateUserDto {
   email: string;
-  name: string;
+  username: string;
   firstName?: string;
   lastName?: string;
   password: string;
@@ -9,7 +9,7 @@ export interface CreateUserDto {
 }
 
 export interface UpdateUserDto {
-  name?: string;
+  username?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
