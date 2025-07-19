@@ -13,7 +13,7 @@ export class Product {
   description: string;
 
   @Column({ unique: true })
-  slug: string;
+  sku: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
