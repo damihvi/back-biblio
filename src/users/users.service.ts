@@ -4,6 +4,13 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
+export interface UpdateProfileDto {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  name?: string;
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -32,6 +39,14 @@ export class UsersService {
     return user;
   }
 
+  async findById(id: number): Promise<Omit<User, 'password'> | null> {
+    const user = await this.userRepo.findOne({
+      where: { id: id.toString() },
+      select: ['id', 'email', 'username', 'firstName', 'lastName', 'role', 'isActive', 'phone', 'address', 'createdAt']
+    });
+    return user;
+  }
+
   async create(createUserDto: CreateUserDto): Promise<Omit<User, 'password'> | null> {
     // Check if email exists
     const existingUser = await this.userRepo.findOne({ where: { email: createUserDto.email } });
@@ -54,8 +69,15 @@ export class UsersService {
     return userWithoutPassword;
   }
 
-  async validateUser(email: string, password: string): Promise<Omit<User, 'password'> | null> {
-    const user = await this.userRepo.findOne({ where: { email } });
+  async validateUser(identifier: string, password: string): Promise<Omit<User, 'password'> | null> {
+    // Check if identifier is email or username
+    const user = await this.userRepo.findOne({ 
+      where: [
+        { email: identifier },
+        { username: identifier }
+      ]
+    });
+    
     if (!user || !user.isActive) return null;
     
     const hashedPassword = this.hashPassword(password);
@@ -64,6 +86,52 @@ export class UsersService {
       return userWithoutPassword;
     }
     return null;
+  }
+
+  async updateProfile(id: number, updateData: UpdateProfileDto): Promise<Omit<User, 'password'> | null> {
+    const userId = id.toString();
+    
+    // Validate user exists
+    const existingUser = await this.userRepo.findOne({ where: { id: userId } });
+    if (!existingUser) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (updateData.email && updateData.email !== existingUser.email) {
+      const emailExists = await this.userRepo.findOne({ where: { email: updateData.email } });
+      if (emailExists) {
+        throw new Error('Este email ya está en uso');
+      }
+    }
+
+    // Update the user
+    await this.userRepo.update(userId, updateData);
+    
+    // Return updated user without password
+    return this.findById(id);
+  }
+
+  async changePassword(id: number, currentPassword: string, newPassword: string): Promise<boolean> {
+    const userId = id.toString();
+    
+    // Find user with password for validation
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    // Validate current password
+    const hashedCurrentPassword = this.hashPassword(currentPassword);
+    if (user.password !== hashedCurrentPassword) {
+      return false; // Current password is incorrect
+    }
+
+    // Hash new password and update
+    const hashedNewPassword = this.hashPassword(newPassword);
+    await this.userRepo.update(userId, { password: hashedNewPassword });
+    
+    return true;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<Omit<User, 'password'> | null> {
