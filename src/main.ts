@@ -10,21 +10,38 @@ async function bootstrap() {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
-      // Allow any Vercel domain or localhost
-      if (
-        origin.includes('.vercel.app') ||
-        origin.startsWith('http://localhost:') ||
-        origin.startsWith('https://localhost:')
-      ) {
+      console.log('CORS request from origin:', origin);
+      
+      // Allow any Vercel domain, localhost, or specific domains
+      const allowedOrigins = [
+        /\.vercel\.app$/,
+        /^http:\/\/localhost:/,
+        /^https:\/\/localhost:/,
+        'https://ecommerce-herrera.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:3001'
+      ];
+      
+      const isAllowed = allowedOrigins.some(pattern => {
+        if (typeof pattern === 'string') {
+          return origin === pattern;
+        }
+        return pattern.test(origin);
+      });
+      
+      if (isAllowed) {
+        console.log('CORS: Origin allowed:', origin);
         return callback(null, true);
       }
       
-      // Reject other origins
+      console.log('CORS: Origin rejected:', origin);
       callback(new Error('Not allowed by CORS'));
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
   
   // Set global prefix
@@ -38,6 +55,7 @@ async function bootstrap() {
   console.log(`
 🚀 Servidor corriendo en: http://${host}:${port}
 📝 API docs disponible en: http://${host}:${port}/api
+🌐 CORS habilitado para dominios .vercel.app y localhost
   `);
 }
 
