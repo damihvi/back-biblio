@@ -55,9 +55,9 @@ async function testBackend() {
   console.log('🚀 Probando backend en Render...\n');
   
   const tests = [
-    { name: 'Health Check', endpoint: '/' },
-    { name: 'Products', endpoint: '/products' },
-    { name: 'Categories', endpoint: '/categories' },
+    { name: 'Health Check', endpoint: '/api' },
+    { name: 'Products', endpoint: '/api/products' },
+    { name: 'Categories', endpoint: '/api/categories' },
   ];
 
   for (const test of tests) {
