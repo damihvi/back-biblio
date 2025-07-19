@@ -6,9 +6,13 @@ import { Product } from '../products/product.entity';
 import { Category } from '../categories/category.entity';
 import { User } from '../users/user.entity';
 import { Order } from '../orders/order.entity';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, Category, User, Order])],
+  imports: [
+    TypeOrmModule.forFeature([Product, Category, User, Order]),
+    AnalyticsModule
+  ],
   controllers: [SearchController],
   providers: [SearchService],
   exports: [SearchService],

@@ -5,6 +5,7 @@ import { Product } from '../products/product.entity';
 import { Category } from '../categories/category.entity';
 import { User } from '../users/user.entity';
 import { Order } from '../orders/order.entity';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class SearchService {
@@ -17,13 +18,15 @@ export class SearchService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
-  async searchProducts(query?: string, categoryId?: string): Promise<Product[]> {
+  async searchProducts(query?: string, categoryId?: string, userAgent?: string, ip?: string): Promise<Product[]> {
     const where: any = { isActive: true };
+    let results: Product[] = [];
     
     if (query) {
-      return this.productRepo.find({
+      results = await this.productRepo.find({
         where: [
           { name: Like(`%${query}%`), isActive: true },
           { description: Like(`%${query}%`), isActive: true }
@@ -31,17 +34,24 @@ export class SearchService {
         relations: ['category'],
         order: { name: 'ASC' }
       });
+      
+      // Log search analytics
+      await this.analyticsService.logSearch(query, categoryId, results.length, userAgent, ip);
+      
+      return results;
     }
     
     if (categoryId) {
       where.categoryId = categoryId;
     }
     
-    return this.productRepo.find({
+    results = await this.productRepo.find({
       where,
       relations: ['category'],
       order: { name: 'ASC' }
     });
+
+    return results;
   }
 
   async searchCategories(query?: string): Promise<Category[]> {
