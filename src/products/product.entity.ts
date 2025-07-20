@@ -12,9 +12,6 @@ export class Product {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ unique: true })
-  sku: string;
-
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
