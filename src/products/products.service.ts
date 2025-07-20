@@ -70,4 +70,12 @@ export class ProductsService {
     product.stock = Math.max(0, product.stock + quantity);
     return this.productRepo.save(product);
   }
+
+  async toggleActive(id: string): Promise<Product | null> {
+    const product = await this.findOne(id);
+    if (!product) return null;
+
+    product.isActive = !product.isActive;
+    return this.productRepo.save(product);
+  }
 }

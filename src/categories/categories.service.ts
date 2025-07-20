@@ -56,4 +56,12 @@ export class CategoriesService {
     const result = await this.categoryRepo.delete(id);
     return result.affected > 0;
   }
+
+  async toggleActive(id: string): Promise<Category | null> {
+    const category = await this.findOne(id);
+    if (!category) return null;
+
+    category.isActive = !category.isActive;
+    return this.categoryRepo.save(category);
+  }
 }

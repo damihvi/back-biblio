@@ -142,4 +142,29 @@ export class CategoriesController {
       throw new InternalServerErrorException('Failed to delete category');
     }
   }
+
+  @Put(':id/toggle-active')
+  async toggleActive(@Param('id') id: string) {
+    if (!id || id.trim() === '') {
+      throw new BadRequestException('Category ID is required');
+    }
+
+    try {
+      const category = await this.categoriesService.toggleActive(id);
+      if (!category) {
+        throw new NotFoundException(`Category with ID '${id}' not found`);
+      }
+      return {
+        success: true,
+        message: `Category ${category.isActive ? 'activated' : 'deactivated'} successfully`,
+        data: category
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      console.error('Error toggling category status:', error);
+      throw new InternalServerErrorException('Failed to toggle category status');
+    }
+  }
 }

@@ -172,4 +172,27 @@ export class ProductsController {
       throw new InternalServerErrorException('Failed to update stock');
     }
   }
+
+  @Put(':id/toggle-active')
+  async toggleActive(@Param('id') id: string) {
+    this.validateUUID(id);
+
+    try {
+      const product = await this.productsService.toggleActive(id);
+      if (!product) {
+        throw new NotFoundException(`Product with ID '${id}' not found`);
+      }
+      return {
+        success: true,
+        message: `Product ${product.isActive ? 'activated' : 'deactivated'} successfully`,
+        data: product
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      console.error('Error toggling product status:', error);
+      throw new InternalServerErrorException('Failed to toggle product status');
+    }
+  }
 }
