@@ -5,10 +5,21 @@ import {
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import { validate as uuidValidate } from 'uuid';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
+  private validateUUID(id: string): void {
+    if (!id || id.trim() === '') {
+      throw new BadRequestException('Product ID is required');
+    }
+    
+    if (!uuidValidate(id)) {
+      throw new BadRequestException(`Invalid UUID format: ${id}`);
+    }
+  }
 
   @Get()
   async findAll(@Query('categoryId') categoryId?: string) {
@@ -34,9 +45,7 @@ export class ProductsController {
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    if (!id || id.trim() === '') {
-      throw new BadRequestException('Product ID is required');
-    }
+    this.validateUUID(id);
 
     try {
       const product = await this.productsService.findOne(id);
@@ -87,9 +96,7 @@ export class ProductsController {
 
   @Put(':id')
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    if (!id || id.trim() === '') {
-      throw new BadRequestException('Product ID is required');
-    }
+    this.validateUUID(id);
 
     if (Object.keys(updateProductDto).length === 0) {
       throw new BadRequestException('At least one field must be provided for update');
@@ -120,9 +127,7 @@ export class ProductsController {
 
   @Delete(':id')
   async delete(@Param('id') id: string) {
-    if (!id || id.trim() === '') {
-      throw new BadRequestException('Product ID is required');
-    }
+    this.validateUUID(id);
 
     try {
       const success = await this.productsService.delete(id);
@@ -144,9 +149,7 @@ export class ProductsController {
 
   @Put(':id/stock')
   async updateStock(@Param('id') id: string, @Body() body: { quantity: number }) {
-    if (!id || id.trim() === '') {
-      throw new BadRequestException('Product ID is required');
-    }
+    this.validateUUID(id);
     if (body.quantity === undefined || typeof body.quantity !== 'number') {
       throw new BadRequestException('Valid quantity is required');
     }
