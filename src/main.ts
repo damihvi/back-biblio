@@ -4,39 +4,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Configure CORS for production
+  // Configure CORS for production - Permitir todos los dominios temporalmente
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      console.log('CORS request from origin:', origin);
-      
-      // Allow any Vercel domain, localhost, or specific domains
-      const allowedOrigins = [
-        /\.vercel\.app$/,
-        /^http:\/\/localhost:/,
-        /^https:\/\/localhost:/,
-        'https://ecommerce-herrera.vercel.app',
-        'http://localhost:3000',
-        'http://localhost:3001'
-      ];
-      
-      const isAllowed = allowedOrigins.some(pattern => {
-        if (typeof pattern === 'string') {
-          return origin === pattern;
-        }
-        return pattern.test(origin);
-      });
-      
-      if (isAllowed) {
-        console.log('CORS: Origin allowed:', origin);
-        return callback(null, true);
-      }
-      
-      console.log('CORS: Origin rejected:', origin);
-      callback(new Error('Not allowed by CORS'));
-    },
+    origin: true, // Permitir todos los orígenes temporalmente
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
     credentials: true,
