@@ -6,6 +6,9 @@ export interface CreateUserDto {
   password: string;
   phone?: string;
   address?: string;
+  role?: string;
+  active?: boolean;
+  isActive?: boolean;
 }
 
 export interface UpdateUserDto {

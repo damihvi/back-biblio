@@ -41,6 +41,30 @@ export class UsersController {
     }
   }
 
+  @Post()
+  async create(@Body() createUserDto: CreateUserDto) {
+    if (!createUserDto.email || !createUserDto.username || !createUserDto.password) {
+      throw new BadRequestException('Email, username and password are required');
+    }
+    if (createUserDto.password.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters');
+    }
+
+    try {
+      const user = await this.usersService.create(createUserDto);
+      return {
+        success: true,
+        data: user,
+        message: 'User created successfully'
+      };
+    } catch (error) {
+      if (error.message === 'Email already exists') {
+        throw new ConflictException('Email already exists');
+      }
+      throw new InternalServerErrorException('Failed to create user');
+    }
+  }
+
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     if (!createUserDto.email || !createUserDto.username || !createUserDto.password) {

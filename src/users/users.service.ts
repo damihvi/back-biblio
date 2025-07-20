@@ -56,12 +56,19 @@ export class UsersService {
 
     const hashedPassword = this.hashPassword(createUserDto.password);
     
-    const user = this.userRepo.create({
+    // Handle role and isActive fields
+    const userData = {
       ...createUserDto,
       password: hashedPassword,
-      role: 'user'
-    });
+      role: createUserDto.role || 'customer', // Default to 'customer' instead of 'user'
+      isActive: createUserDto.isActive !== undefined ? createUserDto.isActive : 
+                createUserDto.active !== undefined ? createUserDto.active : true
+    };
 
+    // Remove the 'active' field if it exists since the entity uses 'isActive'
+    delete (userData as any).active;
+
+    const user = this.userRepo.create(userData);
     const savedUser = await this.userRepo.save(user);
     
     // Return without password
