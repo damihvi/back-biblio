@@ -27,10 +27,14 @@ export class SearchService {
   ) {}
 
   async searchProducts(query?: string, categoryId?: string, userAgent?: string, ip?: string): Promise<Product[]> {
+    console.log('🔍 SearchService.searchProducts called with:', { query, categoryId, userAgent: userAgent?.substring(0, 50), ip });
+    
     const where: any = { isActive: true };
     let results: Product[] = [];
     
     if (query) {
+      console.log(`🔍 Searching for products with query: "${query}"`);
+      
       results = await this.productRepo.find({
         where: [
           { name: Like(`%${query}%`), isActive: true },
@@ -40,17 +44,28 @@ export class SearchService {
         order: { name: 'ASC' }
       });
       
+      console.log(`🔍 Found ${results.length} products matching "${query}"`);
+      
       // Log search analytics to MongoDB - Multiple approaches
       try {
         const category = results.length > 0 && results[0].category ? results[0].category.name : undefined;
+        console.log('🔍 Attempting to log search analytics...', { 
+          query, 
+          category, 
+          resultsCount: results.length, 
+          hasAnalyticsService: !!this.analyticsService,
+          hasSearchModel: !!this.searchAnalyticsModel 
+        });
         
         // Try with AnalyticsService first
         if (this.analyticsService) {
+          console.log('🔍 Using AnalyticsService to log search...');
           await this.analyticsService.logSearch(query, category, results.length, userAgent, ip);
-          console.log(`🔍 Search logged via AnalyticsService: "${query}" found ${results.length} results`);
+          console.log(`✅ Search logged via AnalyticsService: "${query}" found ${results.length} results`);
         } 
         // Fallback to direct MongoDB model
         else if (this.searchAnalyticsModel) {
+          console.log('🔍 Using direct model to log search...');
           const searchLog = new this.searchAnalyticsModel({
             query,
             category,
@@ -59,13 +74,14 @@ export class SearchService {
             ip,
           });
           await searchLog.save();
-          console.log(`🔍 Search logged via direct model: "${query}" found ${results.length} results`);
+          console.log(`✅ Search logged via direct model: "${query}" found ${results.length} results`);
         } 
         else {
-          console.log(`🔍 Search performed: "${query}" found ${results.length} results (analytics unavailable)`);
+          console.log(`⚠️ No analytics service or model available for search: "${query}"`);
         }
       } catch (error) {
         console.error('❌ Error logging search:', error.message);
+        console.error('❌ Full error:', error);
         // Log the search attempt anyway
         console.log(`🔍 Search performed: "${query}" found ${results.length} results (logging failed)`);
       }

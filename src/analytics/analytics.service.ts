@@ -15,7 +15,10 @@ export class AnalyticsService {
 
   // Log search query
   async logSearch(query: string, category?: string, resultsCount?: number, userAgent?: string, ip?: string) {
+    console.log('📊 AnalyticsService.logSearch called with:', { query, category, resultsCount, userAgent: userAgent?.substring(0, 50), ip });
+    
     try {
+      console.log('📊 Creating search log document...');
       const searchLog = new this.searchAnalyticsModel({
         query,
         category,
@@ -23,9 +26,15 @@ export class AnalyticsService {
         userAgent,
         ip,
       });
-      await searchLog.save();
+      
+      console.log('📊 Attempting to save search log to MongoDB...');
+      const saved = await searchLog.save();
+      console.log('✅ Search log saved successfully:', saved._id);
+      
     } catch (error) {
-      console.error('Error logging search:', error);
+      console.error('❌ AnalyticsService error logging search:', error.message);
+      console.error('❌ Full analytics error:', error);
+      throw error;
     }
   }
 
