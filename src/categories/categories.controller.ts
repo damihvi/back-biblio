@@ -16,30 +16,47 @@ export class CategoriesController {
     @Query('limit') limit: string = '10'
   ) {
     try {
-      const pageNum = parseInt(page, 10) || 1;
-      const limitNum = parseInt(limit, 10) || 10;
+      console.log('GET /api/categories called'); // Log para debugging
       
       const categories = await this.categoriesService.findAll();
+      console.log(`Found ${categories.length} categories`); // Log para debugging
       
-      // Aplicar paginación manualmente ya que no está implementada en el servicio
-      const startIndex = (pageNum - 1) * limitNum;
-      const endIndex = startIndex + limitNum;
-      const paginatedCategories = categories.slice(startIndex, endIndex);
-      
-      return {
-        success: true,
-        message: 'Categories retrieved successfully',
-        data: paginatedCategories,
-        pagination: {
-          currentPage: pageNum,
-          totalPages: Math.ceil(categories.length / limitNum),
-          totalItems: categories.length,
-          itemsPerPage: limitNum
-        }
-      };
+      return categories; // Simplificar respuesta para debugging
     } catch (error) {
       console.error('Error fetching categories:', error);
-      throw new InternalServerErrorException('Failed to retrieve categories');
+      throw new InternalServerErrorException('Failed to retrieve categories: ' + error.message);
+    }
+  }
+
+  @Post('seed')
+  async seedCategories() {
+    try {
+      console.log('Seeding categories...');
+      
+      const categories = [
+        { name: 'Electrónicos', description: 'Productos electrónicos y gadgets' },
+        { name: 'Ropa', description: 'Ropa y accesorios' },
+        { name: 'Hogar', description: 'Productos para el hogar' },
+        { name: 'Deportes', description: 'Artículos deportivos' },
+        { name: 'Libros', description: 'Libros y material de lectura' }
+      ];
+
+      const createdCategories = [];
+      for (const categoryData of categories) {
+        const existing = await this.categoriesService.findByName(categoryData.name);
+        if (!existing) {
+          const created = await this.categoriesService.create(categoryData);
+          createdCategories.push(created);
+        }
+      }
+
+      return {
+        message: `Created ${createdCategories.length} categories`,
+        categories: createdCategories
+      };
+    } catch (error) {
+      console.error('Error seeding categories:', error);
+      throw new InternalServerErrorException('Failed to seed categories: ' + error.message);
     }
   }
 

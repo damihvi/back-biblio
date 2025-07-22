@@ -21,6 +21,10 @@ export class CategoriesService {
     return this.categoryRepo.findOne({ where: { id } });
   }
 
+  async findByName(name: string): Promise<Category | null> {
+    return this.categoryRepo.findOne({ where: { name } });
+  }
+
   async create(createCategoryDto: CreateCategoryDto): Promise<Category | null> {
     const slug = createCategoryDto.name.toLowerCase()
       .replace(/[^\w\s-]/g, '')

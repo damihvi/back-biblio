@@ -24,6 +24,8 @@ export class ProductsController {
   @Get()
   async findAll(@Query('categoryId') categoryId?: string) {
     try {
+      console.log('GET /api/products called'); // Log para debugging
+      
       let products;
       if (categoryId) {
         products = await this.productsService.findByCategory(categoryId);
@@ -31,15 +33,12 @@ export class ProductsController {
         products = await this.productsService.findAll();
       }
 
-      return {
-        success: true,
-        message: 'Products retrieved successfully',
-        data: products,
-        count: products.length
-      };
+      console.log(`Found ${products.length} products`); // Log para debugging
+
+      return products; // Simplificar respuesta para debugging
     } catch (error) {
-      console.error('Error fetching products:', error);
-      throw new InternalServerErrorException('Failed to retrieve products');
+      console.error('Error in findAll:', error);
+      throw new InternalServerErrorException('Failed to retrieve products: ' + error.message);
     }
   }
 
@@ -68,32 +67,32 @@ export class ProductsController {
 
   @Post()
   async create(@Body() createProductDto: CreateProductDto) {
-    if (!createProductDto.name || createProductDto.name.trim() === '') {
-      throw new BadRequestException('Product name is required');
-    }
-    if (!createProductDto.price || createProductDto.price <= 0) {
-      throw new BadRequestException('Valid price is required');
-    }
-    if (!createProductDto.categoryId && !createProductDto.category) {
-      throw new BadRequestException('Category ID or category name is required');
-    }
-
     try {
-      const product = await this.productsService.create(createProductDto);
-      if (!product) {
-        throw new InternalServerErrorException('Failed to create product');
+      console.log('POST /api/products called with:', createProductDto); // Log para debugging
+      
+      if (!createProductDto.name || createProductDto.name.trim() === '') {
+        throw new BadRequestException('Product name is required');
       }
-      return {
-        success: true,
-        message: 'Product created successfully',
-        data: product
-      };
+      if (!createProductDto.price || createProductDto.price <= 0) {
+        throw new BadRequestException('Valid price is required');
+      }
+      if (!createProductDto.categoryId && !createProductDto.category) {
+        throw new BadRequestException('Category ID or category name is required');
+      }
+
+      const product = await this.productsService.create(createProductDto);
+      console.log('Product created:', product); // Log para debugging
+      
+      return product; // Simplificar respuesta para debugging
     } catch (error) {
       console.error('Error creating product:', error);
       if (error.message === 'Category not found') {
         throw new BadRequestException('Category not found');
       }
-      throw new InternalServerErrorException('Failed to create product');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to create product: ' + error.message);
     }
   }
 
