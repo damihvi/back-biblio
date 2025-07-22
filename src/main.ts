@@ -4,9 +4,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Configure CORS for production - Permitir todos los dominios temporalmente
+  // Configure CORS for production - Permitir todos los dominios
   app.enableCors({
-    origin: true, // Permitir todos los orígenes temporalmente
+    origin: true, // Permitir todos los orígenes
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
     credentials: true,
@@ -25,7 +25,7 @@ async function bootstrap() {
   console.log(`
 🚀 Servidor corriendo en: http://${host}:${port}
 📝 API docs disponible en: http://${host}:${port}/api
-🌐 CORS habilitado para dominios .vercel.app y localhost
+🌐 CORS habilitado para todos los dominios
   `);
 }
 
