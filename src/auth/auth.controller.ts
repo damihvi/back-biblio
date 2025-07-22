@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, Request, HttpException, HttpStatus } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 
 export interface LoginDto {
@@ -44,18 +44,26 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    const user = await this.usersService.validateUser(loginDto.identifier, loginDto.password);
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
-    
-    return {
-      success: true,
-      data: {
-        token: 'simple-token-' + user.id,
-        user: user
+    try {
+      const user = await this.usersService.validateUser(loginDto.identifier, loginDto.password);
+      if (!user) {
+        throw new HttpException('Credenciales inválidas', HttpStatus.UNAUTHORIZED);
       }
-    };
+      
+      return {
+        success: true,
+        data: {
+          token: 'simple-token-' + user.id,
+          user: user
+        }
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      console.error('Login error:', error);
+      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Post('register')

@@ -77,22 +77,43 @@ export class UsersService {
   }
 
   async validateUser(identifier: string, password: string): Promise<Omit<User, 'password'> | null> {
-    // Check if identifier is email or username
-    const user = await this.userRepo.findOne({ 
-      where: [
-        { email: identifier },
-        { username: identifier }
-      ]
-    });
-    
-    if (!user || !user.isActive) return null;
-    
-    const hashedPassword = this.hashPassword(password);
-    if (user.password === hashedPassword) {
-      const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+    try {
+      console.log('Validating user with identifier:', identifier);
+      
+      // Check if identifier is email or username
+      const user = await this.userRepo.findOne({ 
+        where: [
+          { email: identifier },
+          { username: identifier }
+        ]
+      });
+      
+      console.log('User found:', user ? 'Yes' : 'No');
+      
+      if (!user) {
+        console.log('User not found');
+        return null;
+      }
+      
+      if (!user.isActive) {
+        console.log('User is not active');
+        return null;
+      }
+      
+      const hashedPassword = this.hashPassword(password);
+      console.log('Password hash match:', user.password === hashedPassword);
+      
+      if (user.password === hashedPassword) {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      }
+      
+      console.log('Password does not match');
+      return null;
+    } catch (error) {
+      console.error('Error in validateUser:', error);
+      throw error;
     }
-    return null;
   }
 
   async updateProfile(id: number, updateData: UpdateProfileDto): Promise<Omit<User, 'password'> | null> {
