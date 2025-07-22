@@ -7,12 +7,40 @@ export class OrdersController {
 
   @Post()
   async create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+    try {
+      const order = await this.ordersService.create(createOrderDto);
+      return {
+        success: true,
+        message: 'Order created successfully',
+        data: order
+      };
+    } catch (error) {
+      console.error('Error creating order:', error);
+      return {
+        success: false,
+        message: error.message || 'Error creating order',
+        data: null
+      };
+    }
   }
 
   @Get()
   async findAll() {
-    return this.ordersService.findAll();
+    try {
+      const orders = await this.ordersService.findAll();
+      return {
+        success: true,
+        message: 'Orders retrieved successfully',
+        data: orders
+      };
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      return {
+        success: false,
+        message: error.message || 'Error fetching orders',
+        data: []
+      };
+    }
   }
 
   @Get('user/:userId')

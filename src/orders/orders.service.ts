@@ -7,10 +7,16 @@ import { Product } from '../products/product.entity';
 
 export interface CreateOrderDto {
   userId: string;
+  total: number;
+  status?: string;
   items: {
     productId: string;
+    productName?: string;
     quantity: number;
+    price?: number;
+    subtotal?: number;
   }[];
+  customerInfo?: any;
 }
 
 @Injectable()
@@ -25,44 +31,59 @@ export class OrdersService {
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
-    const { userId, items } = createOrderDto;
+    const { userId, items, total: requestedTotal, status = 'pending' } = createOrderDto;
 
-    // Crear la orden
+    // Crear la orden con ID aleatorio (UUID se genera automáticamente)
     const order = this.orderRepo.create({
       userId,
-      status: 'pending',
+      status,
       total: 0
     });
 
     const savedOrder = await this.orderRepo.save(order);
+    console.log('Order created with ID:', savedOrder.id);
 
     // Crear los items y calcular total
-    let total = 0;
+    let calculatedTotal = 0;
     for (const item of items) {
       const product = await this.productRepo.findOne({ where: { id: item.productId } });
-      if (!product) continue;
+      if (!product) {
+        console.log(`Product not found: ${item.productId}`);
+        continue;
+      }
 
-      const subtotal = parseFloat(product.price.toString()) * item.quantity;
-      total += subtotal;
+      const itemPrice = item.price || parseFloat(product.price.toString());
+      const subtotal = item.subtotal || (itemPrice * item.quantity);
+      calculatedTotal += subtotal;
 
-      // Actualizar stock
+      // Actualizar stock del producto
       product.stock -= item.quantity;
       await this.productRepo.save(product);
+      console.log(`Updated stock for product ${product.name}: ${product.stock}`);
 
-      // Crear item
+      // Crear item con ID aleatorio (UUID se genera automáticamente)
       const orderItem = this.orderItemRepo.create({
         orderId: savedOrder.id,
         productId: item.productId,
         quantity: item.quantity,
-        price: product.price,
+        price: itemPrice,
         subtotal
       });
       await this.orderItemRepo.save(orderItem);
+      console.log('OrderItem created with ID:', orderItem.id);
     }
 
-    // Actualizar total de la orden
-    savedOrder.total = total;
-    return this.orderRepo.save(savedOrder);
+    // Actualizar total de la orden (usar el calculado o el enviado)
+    savedOrder.total = requestedTotal || calculatedTotal;
+    const finalOrder = await this.orderRepo.save(savedOrder);
+    
+    console.log('Final order saved:', {
+      id: finalOrder.id,
+      total: finalOrder.total,
+      status: finalOrder.status
+    });
+
+    return finalOrder;
   }
 
   async findAll(): Promise<Order[]> {
