@@ -100,6 +100,8 @@ export class ProductsController {
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     this.validateUUID(id);
 
+    console.log('PUT /api/products/:id called with:', { id, updateProductDto }); // Debug log
+
     if (Object.keys(updateProductDto).length === 0) {
       throw new BadRequestException('At least one field must be provided for update');
     }
@@ -113,6 +115,9 @@ export class ProductsController {
       if (!product) {
         throw new NotFoundException(`Product with ID '${id}' not found`);
       }
+      
+      console.log('Product updated successfully:', product); // Debug log
+      
       return {
         success: true,
         message: 'Product updated successfully',
