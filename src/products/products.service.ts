@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './product.entity';
+import { Category } from '../categories/category.entity';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 
 @Injectable()
@@ -9,7 +10,24 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
+    @InjectRepository(Category)
+    private readonly categoryRepo: Repository<Category>,
   ) {}
+
+  private async resolveCategoryId(dto: CreateProductDto | UpdateProductDto): Promise<string | null> {
+    if (dto.categoryId) {
+      return dto.categoryId;
+    }
+    
+    if (dto.category) {
+      const category = await this.categoryRepo.findOne({
+        where: { name: dto.category }
+      });
+      return category?.id || null;
+    }
+    
+    return null;
+  }
 
   async findAll(): Promise<Product[]> {
     return this.productRepo.find({
@@ -34,17 +52,39 @@ export class ProductsService {
   }
 
   async create(createProductDto: CreateProductDto): Promise<Product | null> {
-    const product = this.productRepo.create({
-      ...createProductDto,
-      isActive: true
-    });
+    const categoryId = await this.resolveCategoryId(createProductDto);
+    
+    if (!categoryId) {
+      throw new Error('Category not found');
+    }
 
+    const productData = {
+      name: createProductDto.name,
+      description: createProductDto.description,
+      price: createProductDto.price,
+      stock: createProductDto.stock || 0,
+      categoryId,
+      imageUrl: createProductDto.imageUrl,
+      isActive: true
+    };
+
+    const product = this.productRepo.create(productData);
     return this.productRepo.save(product);
   }
 
   async update(id: string, updateProductDto: UpdateProductDto): Promise<Product | null> {
     const product = await this.findOne(id);
     if (!product) return null;
+
+    // Resolver categoryId si se envió el nombre de la categoría
+    if (updateProductDto.category || updateProductDto.categoryId) {
+      const categoryId = await this.resolveCategoryId(updateProductDto);
+      if (categoryId) {
+        updateProductDto.categoryId = categoryId;
+      }
+      // Remover el campo category del DTO para evitar conflictos
+      delete updateProductDto.category;
+    }
 
     if (updateProductDto.name) {
       const slug = updateProductDto.name.toLowerCase()

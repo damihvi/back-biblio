@@ -74,8 +74,8 @@ export class ProductsController {
     if (!createProductDto.price || createProductDto.price <= 0) {
       throw new BadRequestException('Valid price is required');
     }
-    if (!createProductDto.categoryId) {
-      throw new BadRequestException('Category ID is required');
+    if (!createProductDto.categoryId && !createProductDto.category) {
+      throw new BadRequestException('Category ID or category name is required');
     }
 
     try {
@@ -90,6 +90,9 @@ export class ProductsController {
       };
     } catch (error) {
       console.error('Error creating product:', error);
+      if (error.message === 'Category not found') {
+        throw new BadRequestException('Category not found');
+      }
       throw new InternalServerErrorException('Failed to create product');
     }
   }
