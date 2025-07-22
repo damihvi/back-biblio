@@ -9,7 +9,6 @@ import { OrdersModule } from './orders/orders.module';
 import { SearchModule } from './search/search.module';
 import { AuthModule } from './auth/auth.module';
 import { AnalyticsModule } from './analytics/analytics.module';
-import { DebugModule } from './debug/debug.module';
 import { Category } from './categories/category.entity';
 import { Product } from './products/product.entity';
 import { User } from './users/user.entity';
@@ -52,8 +51,7 @@ import { AppService } from './app.service';
     OrdersModule,
     SearchModule,
     AuthModule,
-    AnalyticsModule,
-    DebugModule
+    AnalyticsModule
   ],
   controllers: [AppController],
   providers: [AppService],
