@@ -54,7 +54,9 @@ export class UsersService {
       throw new Error('Email already exists');
     }
 
+    console.log('Creating user with password:', createUserDto.password);
     const hashedPassword = this.hashPassword(createUserDto.password);
+    console.log('Generated hash for new user:', hashedPassword);
     
     // Handle role and isActive fields
     const userData = {
@@ -79,6 +81,7 @@ export class UsersService {
   async validateUser(identifier: string, password: string): Promise<Omit<User, 'password'> | null> {
     try {
       console.log('Validating user with identifier:', identifier);
+      console.log('Raw password received:', password);
       
       // Check if identifier is email or username
       const user = await this.userRepo.findOne({ 
@@ -101,6 +104,8 @@ export class UsersService {
       }
       
       const hashedPassword = this.hashPassword(password);
+      console.log('Generated hash for validation:', hashedPassword);
+      console.log('Stored hash in database:', user.password);
       console.log('Password hash match:', user.password === hashedPassword);
       
       if (user.password === hashedPassword) {
@@ -159,6 +164,22 @@ export class UsersService {
     const hashedNewPassword = this.hashPassword(newPassword);
     await this.userRepo.update(userId, { password: hashedNewPassword });
     
+    return true;
+  }
+
+  async resetPassword(id: string, newPassword: string): Promise<boolean> {
+    const user = await this.userRepo.findOne({ where: { id } });
+    
+    if (!user) {
+      return false;
+    }
+    
+    console.log('Resetting password for user:', user.email);
+    console.log('New password:', newPassword);
+    const hashedNewPassword = this.hashPassword(newPassword);
+    console.log('New password hash:', hashedNewPassword);
+    
+    await this.userRepo.update({ id }, { password: hashedNewPassword });
     return true;
   }
 

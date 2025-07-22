@@ -130,6 +130,23 @@ export class UsersController {
     }
   }
 
+  @Post(':id/reset-password')
+  async resetPassword(@Param('id') id: string, @Body() body: { newPassword: string }) {
+    try {
+      const result = await this.usersService.resetPassword(id, body.newPassword);
+      if (!result) {
+        throw new NotFoundException('User not found');
+      }
+      return {
+        success: true,
+        message: 'Password reset successfully'
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('Failed to reset password');
+    }
+  }
+
   @Delete(':id')
   async delete(@Param('id') id: string) {
     try {

@@ -83,6 +83,13 @@ export class AuthController {
     };
   }
 
+  @Get('debug-hash')
+  async debugHash(@Body() body: { password: string }) {
+    const password = body.password;
+    const hash = Buffer.from(password + 'simple-salt').toString('base64');
+    return { password, hash };
+  }
+
   @Get('profile')
   @UseGuards(AuthGuard)
   async getProfile(@Request() req) {
