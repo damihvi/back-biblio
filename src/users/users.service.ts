@@ -167,22 +167,6 @@ export class UsersService {
     return true;
   }
 
-  async resetPassword(id: string, newPassword: string): Promise<boolean> {
-    const user = await this.userRepo.findOne({ where: { id } });
-    
-    if (!user) {
-      return false;
-    }
-    
-    console.log('Resetting password for user:', user.email);
-    console.log('New password:', newPassword);
-    const hashedNewPassword = this.hashPassword(newPassword);
-    console.log('New password hash:', hashedNewPassword);
-    
-    await this.userRepo.update({ id }, { password: hashedNewPassword });
-    return true;
-  }
-
   async update(id: string, updateUserDto: UpdateUserDto): Promise<Omit<User, 'password'> | null> {
     await this.userRepo.update(id, updateUserDto);
     return this.findOne(id);
