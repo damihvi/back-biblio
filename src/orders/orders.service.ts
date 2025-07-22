@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Order } from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { Product } from '../products/product.entity';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 export interface CreateOrderDto {
   userId: string;
@@ -28,6 +29,7 @@ export class OrdersService {
     private readonly orderItemRepo: Repository<OrderItem>,
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
@@ -82,6 +84,23 @@ export class OrdersService {
       total: finalOrder.total,
       status: finalOrder.status
     });
+
+    // Log order items to MongoDB Analytics
+    try {
+      const mongoItems = items.map(item => ({
+        orderId: savedOrder.id,
+        productId: item.productId,
+        productName: item.productName || 'Unknown Product',
+        quantity: item.quantity,
+        price: item.price || 0,
+        subtotal: item.subtotal || 0
+      }));
+      
+      await this.analyticsService.storeOrderItems(savedOrder.id, mongoItems);
+      console.log(`🛒 Order items logged to MongoDB: ${items.length} items for order ${savedOrder.id}`);
+    } catch (error) {
+      console.error('Error logging order items to MongoDB:', error);
+    }
 
     return finalOrder;
   }

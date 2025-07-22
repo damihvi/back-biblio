@@ -5,6 +5,7 @@ import { Product } from '../products/product.entity';
 import { Category } from '../categories/category.entity';
 import { User } from '../users/user.entity';
 import { Order } from '../orders/order.entity';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class SearchService {
@@ -17,6 +18,7 @@ export class SearchService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async searchProducts(query?: string, categoryId?: string, userAgent?: string, ip?: string): Promise<Product[]> {
@@ -33,8 +35,14 @@ export class SearchService {
         order: { name: 'ASC' }
       });
       
-      // TODO: Log search analytics (temporarily disabled)
-      // await this.analyticsService.logSearch(query, categoryId, results.length, userAgent, ip);
+      // Log search analytics to MongoDB
+      try {
+        const category = results.length > 0 && results[0].category ? results[0].category.name : undefined;
+        await this.analyticsService.logSearch(query, category, results.length, userAgent, ip);
+        console.log(`🔍 Search logged: "${query}" found ${results.length} results`);
+      } catch (error) {
+        console.error('Error logging search:', error);
+      }
       
       return results;
     }
