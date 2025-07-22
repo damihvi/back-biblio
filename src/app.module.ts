@@ -13,7 +13,6 @@ import { Category } from './categories/category.entity';
 import { Product } from './products/product.entity';
 import { User } from './users/user.entity';
 import { Order } from './orders/order.entity';
-import { OrderItem } from './orders/order-item.entity';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -22,11 +21,11 @@ import { AppService } from './app.service';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    // PostgreSQL Connection (Neon) - Structured Data
+    // PostgreSQL Connection (Neon) - 4 main tables
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL || 'postgresql://localhost:5432/ecommerce',
-      entities: [Category, Product, User, Order, OrderItem],
+      entities: [Category, Product, User, Order],
       synchronize: process.env.NODE_ENV !== 'production',
       ssl: process.env.DATABASE_URL ? { 
         rejectUnauthorized: false
@@ -36,7 +35,7 @@ import { AppService } from './app.service';
       retryDelay: 3000,
       autoLoadEntities: true,
     }),
-    // MongoDB Connection (Atlas) - Analytics & Flexible Data
+    // MongoDB Connection (Atlas) - 2 collections
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce-analytics',
       {

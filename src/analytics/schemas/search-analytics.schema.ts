@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-// Simple search analytics
+// Search Analytics - MongoDB
 @Schema({ timestamps: true })
 export class SearchAnalytics extends Document {
   @Prop({ required: true })
