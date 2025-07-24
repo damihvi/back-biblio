@@ -11,6 +11,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { Genre } from './categories/genre.entity';
 import { Book } from './products/book.entity';
 import { User } from './users/user.entity';
+import { Loan } from './loans/loan.entity';
+import { LoansModule } from './loans/loans.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -23,7 +25,7 @@ import { AppService } from './app.service';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL || 'postgresql://localhost:5432/ecommerce',
-      entities: [Genre, Book, User],
+      entities: [Genre, Book, User, 'dist/**/*.entity{.ts,.js}'],
       synchronize: process.env.NODE_ENV !== 'production',
       ssl: process.env.DATABASE_URL ? { 
         rejectUnauthorized: false
@@ -47,7 +49,8 @@ import { AppService } from './app.service';
     UsersModule,
     SearchModule,
     AuthModule,
-    AnalyticsModule
+    AnalyticsModule,
+    LoansModule
   ],
   controllers: [AppController],
   providers: [AppService],
