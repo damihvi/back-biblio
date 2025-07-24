@@ -31,11 +31,12 @@ export class GenresService {
     const genre = await this.findOne(id);
     if (!genre) return null;
 
-    if (updateGenreDto.name) {
-      updateGenreDto.slug = this.generateSlug(updateGenreDto.name);
+    const updates = { ...updateGenreDto };
+    if (updates.name) {
+      updates['slug'] = this.generateSlug(updates.name);
     }
 
-    Object.assign(genre, updateGenreDto);
+    Object.assign(genre, updates);
     return this.genreRepo.save(genre);
   }
 

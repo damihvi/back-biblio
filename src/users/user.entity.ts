@@ -45,8 +45,7 @@ export class User {
   @OneToMany(() => Loan, loan => loan.user)
   loans: Loan[];
 
-  // Método auxiliar para verificar si el usuario puede pedir más libros prestados
-  canBorrowBooks(): boolean {
+  get canBorrowBooks(): boolean {
     return this.isActive && !this.hasOverdueLoans && this.loans?.filter(loan => !loan.isReturned).length < this.maxLoans;
   }
 }

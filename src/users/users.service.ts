@@ -25,7 +25,7 @@ export class UsersService {
 
   async findAll(): Promise<Omit<User, 'password'>[]> {
     const users = await this.userRepo.find({
-      select: ['id', 'email', 'username', 'firstName', 'lastName', 'role', 'isActive', 'phone', 'address', 'createdAt'],
+      relations: ['loans'],
       order: { createdAt: 'DESC' }
     });
     return users;
@@ -34,7 +34,7 @@ export class UsersService {
   async findOne(id: string): Promise<Omit<User, 'password'> | null> {
     const user = await this.userRepo.findOne({
       where: { id },
-      select: ['id', 'email', 'username', 'firstName', 'lastName', 'role', 'isActive', 'phone', 'address', 'createdAt']
+      relations: ['loans']
     });
     return user;
   }
@@ -73,9 +73,9 @@ export class UsersService {
     const user = this.userRepo.create(userData);
     const savedUser = await this.userRepo.save(user);
     
-    // Return without password
-    const { password, ...userWithoutPassword } = savedUser;
-    return userWithoutPassword;
+    // Find the user with relations to get loans
+    const userWithRelations = await this.findOne(savedUser.id);
+    return userWithRelations;
   }
 
   async validateUser(identifier: string, password: string): Promise<Omit<User, 'password'> | null> {
@@ -109,8 +109,7 @@ export class UsersService {
       console.log('Password hash match:', user.password === hashedPassword);
       
       if (user.password === hashedPassword) {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+        return this.findOne(user.id);
       }
       
       console.log('Password does not match');
