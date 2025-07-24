@@ -18,119 +18,123 @@ export class SearchService {
     private readonly categoryRepo: Repository<Category>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(Order)
-    private readonly orderRepo: Repository<Order>,
     @Optional() private readonly analyticsService?: AnalyticsService,
-    @Optional() @InjectModel(SearchAnalytics.name, 'analytics')
+    @Optional() @InjectModel(SearchAnalytics.name)
     private readonly searchAnalyticsModel?: Model<SearchAnalytics>,
   ) {}
 
-  async searchProducts(query?: string, categoryId?: string, userAgent?: string, ip?: string): Promise<Product[]> {
-    console.log('🔍 SearchService.searchProducts called with:', { query, categoryId, userAgent: userAgent?.substring(0, 50), ip });
-    
-    const where: any = { isActive: true };
-    let results: Product[] = [];
-    
-    if (query) {
-      console.log(`🔍 Searching for products with query: "${query}"`);
-      
-      results = await this.productRepo.find({
-        where: [
-          { name: Like(`%${query}%`), isActive: true },
-          { description: Like(`%${query}%`), isActive: true }
-        ],
-        relations: ['category'],
-        order: { name: 'ASC' }
+  async searchBooks(query?: string, categoryId?: string, userAgent?: string, ip?: string): Promise<Book[]> {
+    // Track search query if analytics service is available
+    if (query && this.analyticsService) {
+      await this.logSearch(query, userAgent, ip);
+    }
+
+    let results: Book[] = [];
+
+    if (!query && !categoryId) {
+      // Si no hay query ni categoryId, devolver todos los libros disponibles
+      results = await this.bookRepo.find({
+        where: { available: true },
+        relations: ['category', 'genre'],
+        order: { title: 'ASC' }
       });
-      
-      console.log(`🔍 Found ${results.length} products matching "${query}"`);
-      
-      // Log search analytics to MongoDB - Multiple approaches
-      try {
-        const category = results.length > 0 && results[0].category ? results[0].category.name : undefined;
-        console.log('🔍 Attempting to log search analytics...', { 
-          query, 
-          category, 
-          resultsCount: results.length, 
-          hasAnalyticsService: !!this.analyticsService,
-          hasSearchModel: !!this.searchAnalyticsModel 
-        });
-        
-        // Try with AnalyticsService first
-        if (this.analyticsService) {
-          console.log('🔍 Using AnalyticsService to log search...');
-          await this.analyticsService.logSearch(query, category, results.length, userAgent, ip);
-          console.log(`✅ Search logged via AnalyticsService: "${query}" found ${results.length} results`);
-        } 
-        // Fallback to direct MongoDB model
-        else if (this.searchAnalyticsModel) {
-          console.log('🔍 Using direct model to log search...');
-          const searchLog = new this.searchAnalyticsModel({
-            query,
-            category,
-            resultsCount: results.length || 0,
-            userAgent,
-            ip,
-          });
-          await searchLog.save();
-          console.log(`✅ Search logged via direct model: "${query}" found ${results.length} results`);
-        } 
-        else {
-          console.log(`⚠️ No analytics service or model available for search: "${query}"`);
-        }
-      } catch (error) {
-        console.error('❌ Error logging search:', error.message);
-        console.error('❌ Full error:', error);
-        // Log the search attempt anyway
-        console.log(`🔍 Search performed: "${query}" found ${results.length} results (logging failed)`);
+    } else if (categoryId) {
+      // Búsqueda por categoría
+      const whereClause: any = {
+        available: true,
+        categoryId
+      };
+
+      if (query) {
+        whereClause.title = Like(`%${query}%`);
       }
-      
-      return results;
+
+      results = await this.bookRepo.find({
+        where: whereClause,
+        relations: ['category', 'genre'],
+        order: { title: 'ASC' }
+      });
+    } else if (query) {
+      // Búsqueda por título, autor, descripción, ISBN o categoría
+      const terms = query.toLowerCase().split(' ');
+      const categories = await this.categoryRepo.find();
+      const categoryMatches = categories.filter(cat => 
+        terms.some(term => cat.name.toLowerCase().includes(term))
+      );
+
+      const categoryIds = categoryMatches.map(cat => cat.id);
+
+      results = await this.bookRepo.find({
+        where: [
+          { title: Like(`%${query}%`), available: true },
+          { author: Like(`%${query}%`), available: true },
+          { description: Like(`%${query}%`), available: true },
+          { isbn: Like(`%${query}%`), available: true },
+          ...categoryIds.map(catId => ({ categoryId: catId, available: true }))
+        ],
+        relations: ['category', 'genre'],
+        order: { title: 'ASC' }
+      });
     }
-    
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-    
-    results = await this.productRepo.find({
-      where,
-      relations: ['category'],
-      order: { name: 'ASC' }
-    });
 
     return results;
   }
 
-  async searchCategories(query?: string): Promise<Category[]> {
-    if (!query) {
-      return this.categoryRepo.find({
-        where: { isActive: true },
-        order: { name: 'ASC' }
-      });
-    }
-
-    return this.categoryRepo.find({
+  async searchUsers(query: string): Promise<User[]> {
+    return this.userRepo.find({
       where: [
-        { name: Like(`%${query}%`), isActive: true },
-        { description: Like(`%${query}%`), isActive: true }
+        { email: Like(`%${query}%`) },
+        { username: Like(`%${query}%`) },
+        { firstName: Like(`%${query}%`) },
+        { lastName: Like(`%${query}%`) }
       ],
-      order: { name: 'ASC' }
+      select: ['id', 'email', 'username', 'firstName', 'lastName', 'role', 'isActive']
     });
   }
 
-  async getStats() {
-    const [totalProducts, totalCategories, totalUsers, totalOrders] = await Promise.all([
-      this.productRepo.count(),
-      this.categoryRepo.count({ where: { isActive: true } }),
-      this.userRepo.count({ where: { isActive: true } }),
-      this.orderRepo.count()
-    ]);
+  async getDashboardStats() {
+    try {
+      const [
+        totalBooks,
+        totalUsers,
+        availableBooks,
+        recentlyAddedBooks
+      ] = await Promise.all([
+        this.bookRepo.count(),
+        this.userRepo.count(),
+        this.bookRepo.count({ where: { available: true } }),
+        this.bookRepo.find({
+          take: 5,
+          order: { createdAt: 'DESC' },
+          relations: ['category', 'genre']
+        })
+      ]);
 
-    return {
-      products: totalProducts,
-      categories: totalCategories,
-      users: totalUsers,
-      orders: totalOrders
-    };
+      return {
+        totalBooks,
+        totalUsers,
+        availableBooks,
+        recentlyAddedBooks
+      };
+    } catch (error) {
+      console.error('Error getting dashboard stats:', error);
+      throw error;
+    }
+  }
+
+  private async logSearch(query: string, userAgent?: string, ip?: string) {
+    if (this.searchAnalyticsModel) {
+      try {
+        const searchLog = new this.searchAnalyticsModel({
+          query,
+          timestamp: new Date(),
+          userAgent,
+          ip
+        });
+        await searchLog.save();
+      } catch (error) {
+        console.error('Error logging search:', error);
+      }
+    }
   }
 }
