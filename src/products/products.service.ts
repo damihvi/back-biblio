@@ -1,121 +1,264 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Product } from './product.entity';
-import { Category } from '../categories/category.entity';
-import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import { Repository, MoreThan, Like, Between, DeepPartial } from 'typeorm';
+import { Book } from './book.entity';
+import { Genre } from '../categories/genre.entity';
+import { CreateBookDto, UpdateBookDto, SearchBooksDto } from './dto/book.dto';
 
 @Injectable()
-export class ProductsService {
+export class BooksService {
   constructor(
-    @InjectRepository(Product)
-    private readonly productRepo: Repository<Product>,
-    @InjectRepository(Category)
-    private readonly categoryRepo: Repository<Category>,
+    @InjectRepository(Book)
+    private readonly bookRepo: Repository<Book>,
+    @InjectRepository(Genre)
+    private readonly genreRepo: Repository<Genre>,
   ) {}
 
-  private async resolveCategoryId(dto: CreateProductDto | UpdateProductDto): Promise<string | null> {
-    if (dto.categoryId) {
-      return dto.categoryId;
+  async resolveGenreId(dto: CreateBookDto | UpdateBookDto): Promise<string | null> {
+    if (!dto) {
+      throw new BadRequestException('DTO is required');
     }
-    
-    if (dto.category) {
-      const category = await this.categoryRepo.findOne({
-        where: { name: dto.category }
+
+    if (dto.genreId) {
+      return dto.genreId;
+    }
+
+    if (dto.genre) {
+      const genre = await this.genreRepo.findOne({
+        where: { name: dto.genre },
       });
-      return category?.id || null;
+
+      if (!genre) {
+        throw new NotFoundException(`Genre not found: ${dto.genre}`);
+      }
+
+      return genre.id;
     }
-    
+
     return null;
   }
 
-  async findAll(): Promise<Product[]> {
-    return this.productRepo.find({
-      relations: ['category'],
-      order: { name: 'ASC' }
-    });
-  }
-
-  async findByCategory(categoryId: string): Promise<Product[]> {
-    return this.productRepo.find({
-      where: { categoryId, isActive: true },
-      relations: ['category'],
-      order: { name: 'ASC' }
-    });
-  }
-
-  async findOne(id: string): Promise<Product | null> {
-    return this.productRepo.findOne({
-      where: { id },
-      relations: ['category']
-    });
-  }
-
-  async create(createProductDto: CreateProductDto): Promise<Product | null> {
-    const categoryId = await this.resolveCategoryId(createProductDto);
-    
-    if (!categoryId) {
-      throw new Error('Category not found');
-    }
-
-    const productData = {
-      name: createProductDto.name,
-      description: createProductDto.description,
-      price: createProductDto.price,
-      stock: createProductDto.stock || 0,
-      categoryId,
-      imageUrl: createProductDto.imageUrl,
-      isActive: true
-    };
-
-    const product = this.productRepo.create(productData);
-    return this.productRepo.save(product);
-  }
-
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product | null> {
-    const product = await this.findOne(id);
-    if (!product) return null;
-
-    // Resolver categoryId si se envió el nombre de la categoría
-    if (updateProductDto.category || updateProductDto.categoryId) {
-      const categoryId = await this.resolveCategoryId(updateProductDto);
-      if (categoryId) {
-        updateProductDto.categoryId = categoryId;
+  async findAll(searchParams?: SearchBooksDto): Promise<Book[]> {
+    try {
+      const where: any = {};
+      
+      if (searchParams) {
+        if (searchParams.title) {
+          where.title = Like(`%${searchParams.title}%`);
+        }
+        if (searchParams.author) {
+          where.author = Like(`%${searchParams.author}%`);
+        }
+        if (searchParams.isbn) {
+          where.isbn = searchParams.isbn;
+        }
+        if (searchParams.publishedYearStart && searchParams.publishedYearEnd) {
+          where.publishedYear = Between(searchParams.publishedYearStart, searchParams.publishedYearEnd);
+        }
+        if (searchParams.genreId) {
+          where.genreId = searchParams.genreId;
+        }
+        if (searchParams.categoryId) {
+          where.categoryId = searchParams.categoryId;
+        }
+        if (searchParams.available !== undefined) {
+          where.available = searchParams.available;
+        }
       }
-      // Remover el campo category del DTO para evitar conflictos
-      delete updateProductDto.category;
+
+      return await this.bookRepo.find({
+        where,
+        relations: ['category', 'genre'],
+        order: { title: 'ASC' },
+      });
+    } catch (error) {
+      throw new BadRequestException(`Error fetching books: ${error.message}`);
+    }
+  }
+
+  async findByCategory(categoryId: string, onlyAvailable = true): Promise<Book[]> {
+    if (!categoryId) {
+      throw new BadRequestException('Category ID is required');
     }
 
-    if (updateProductDto.name) {
-      const slug = updateProductDto.name.toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-      Object.assign(updateProductDto, { slug });
+    try {
+      const where: any = { categoryId };
+      if (onlyAvailable) {
+        where.available = true;
+        where.availableCopies = MoreThan(0);
+      }
+
+      return await this.bookRepo.find({
+        where,
+        relations: ['category', 'genre'],
+        order: { title: 'ASC' },
+      });
+    } catch (error) {
+      throw new BadRequestException(`Error fetching books by category: ${error.message}`);
+    }
+  }
+
+  async findByGenre(genreId: string, onlyAvailable = true): Promise<Book[]> {
+    if (!genreId) {
+      throw new BadRequestException('Genre ID is required');
     }
 
-    Object.assign(product, updateProductDto);
-    return this.productRepo.save(product);
+    try {
+      const where: any = { genreId };
+      if (onlyAvailable) {
+        where.available = true;
+        where.availableCopies = MoreThan(0);
+      }
+
+      return await this.bookRepo.find({
+        where,
+        relations: ['category', 'genre'],
+        order: { title: 'ASC' },
+      });
+    } catch (error) {
+      throw new BadRequestException(`Error fetching books by genre: ${error.message}`);
+    }
   }
 
-  async delete(id: string): Promise<boolean> {
-    const result = await this.productRepo.delete(id);
-    return result.affected > 0;
+  async findAvailable(): Promise<Book[]> {
+    try {
+      return await this.bookRepo.find({
+        where: { 
+          available: true, 
+          availableCopies: MoreThan(0) 
+        },
+        relations: ['category', 'genre'],
+        order: { title: 'ASC' },
+      });
+    } catch (error) {
+      throw new BadRequestException(`Error fetching available books: ${error.message}`);
+    }
   }
 
-  async updateStock(id: string, quantity: number): Promise<Product | null> {
-    const product = await this.findOne(id);
-    if (!product) return null;
+  async updateStock(id: string, quantity: number): Promise<Book> {
+    const book = await this.findOne(id);
+    
+    if (!book) {
+      throw new NotFoundException(`Book with ID ${id} not found`);
+    }
 
-    product.stock = Math.max(0, product.stock + quantity);
-    return this.productRepo.save(product);
+    // Validar que no se puedan restar más copias de las disponibles
+    if (quantity < 0 && Math.abs(quantity) > book.availableCopies) {
+      throw new BadRequestException(`Cannot remove ${Math.abs(quantity)} copies. Only ${book.availableCopies} available.`);
+    }
+
+    book.totalCopies += quantity;
+    book.availableCopies += quantity;
+    book.updateAvailability();
+
+    try {
+      return await this.bookRepo.save(book);
+    } catch (error) {
+      throw new BadRequestException(`Error updating book stock: ${error.message}`);
+    }
   }
 
-  async toggleActive(id: string): Promise<Product | null> {
-    const product = await this.findOne(id);
-    if (!product) return null;
+  async searchBooks(query: string): Promise<Book[]> {
+    try {
+      return await this.bookRepo.find({
+        where: [
+          { title: Like(`%${query}%`) },
+          { author: Like(`%${query}%`) },
+          { isbn: Like(`%${query}%`) },
+          { publisher: Like(`%${query}%`) },
+          { deweyCode: Like(`%${query}%`) }
+        ],
+        relations: ['category', 'genre'],
+        order: { title: 'ASC' },
+      });
+    } catch (error) {
+      throw new BadRequestException(`Error searching books: ${error.message}`);
+    }
+  }
 
-    product.isActive = !product.isActive;
-    return this.productRepo.save(product);
+  async findOne(id: string): Promise<Book> {
+    if (!id) {
+      throw new BadRequestException('Book ID is required');
+    }
+
+    const book = await this.bookRepo.findOne({
+      where: { id },
+      relations: ['category', 'genre'],
+    });
+
+    if (!book) {
+      throw new NotFoundException(`Book with ID ${id} not found`);
+    }
+
+    return book;
+  }
+
+  async create(createBookDto: CreateBookDto): Promise<Book> {
+    if (!createBookDto) {
+      throw new BadRequestException('Book data is required');
+    }
+
+    try {
+      const genreId = await this.resolveGenreId(createBookDto);
+      const { genre, ...bookData } = createBookDto;
+      
+      const bookToCreate: DeepPartial<Book> = {
+        ...bookData,
+        genreId: genreId || undefined,
+        totalCopies: bookData.totalCopies,
+        availableCopies: bookData.totalCopies,
+        available: bookData.totalCopies > 0
+      };
+
+      // Crear y guardar el libro en la base de datos
+      const book = this.bookRepo.create(bookToCreate);
+      return await this.bookRepo.save(book);
+    } catch (error) {
+      throw new BadRequestException(`Error creating book: ${error.message}`);
+    }
+  }
+
+  async update(id: string, updateBookDto: UpdateBookDto): Promise<Book> {
+    const book = await this.findOne(id);
+    
+    if (!book) {
+      throw new NotFoundException(`Book with ID ${id} not found`);
+    }
+
+    try {
+      const genreId = await this.resolveGenreId(updateBookDto);
+      const { genre, ...updates } = updateBookDto;
+      
+      if (updates.totalCopies !== undefined) {
+        const newTotal = Number(updates.totalCopies);
+        const difference = newTotal - book.totalCopies;
+        book.totalCopies = newTotal;
+        book.availableCopies = Math.max(0, book.availableCopies + difference);
+      }
+
+      Object.assign(book, {
+        ...updates,
+        genreId: genreId || book.genreId,
+      });
+
+      book.updateAvailability();
+      return await this.bookRepo.save(book);
+    } catch (error) {
+      throw new BadRequestException(`Error updating book: ${error.message}`);
+    }
+  }
+
+  async remove(id: string): Promise<void> {
+    const book = await this.findOne(id);
+    
+    if (!book) {
+      throw new NotFoundException(`Book with ID ${id} not found`);
+    }
+
+    try {
+      await this.bookRepo.remove(book);
+    } catch (error) {
+      throw new BadRequestException(`Error deleting book: ${error.message}`);
+    }
   }
 }

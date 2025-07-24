@@ -58,7 +58,7 @@ export class AppService {
     return {
       name: 'Ecommerce API',
       version: '2.0.0',
-      description: 'Complete ecommerce API with users, products, categories, orders and search',
+      description: 'API con users, products, categories',
       endpoints: {
         categories: '/api/categories',
         products: '/api/products',

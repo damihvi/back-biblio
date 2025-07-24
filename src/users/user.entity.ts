@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
+import { Loan } from '../loans/loan.entity';
 
 @Entity('users')
 export class User {
@@ -34,4 +35,18 @@ export class User {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ default: 0 })
+  maxLoans: number;
+
+  @Column({ default: false })
+  hasOverdueLoans: boolean;
+
+  @OneToMany(() => Loan, loan => loan.user)
+  loans: Loan[];
+
+  // Método auxiliar para verificar si el usuario puede pedir más libros prestados
+  canBorrowBooks(): boolean {
+    return this.isActive && !this.hasOverdueLoans && this.loans?.filter(loan => !loan.isReturned).length < this.maxLoans;
+  }
 }

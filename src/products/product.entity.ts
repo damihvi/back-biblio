@@ -1,28 +1,31 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Category } from '../categories/category.entity';
 
-@Entity('products')
-export class Product {
+@Entity('books')
+export class Book {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  name: string;
+  title: string;
+
+  @Column()
+  author: string;
 
   @Column({ nullable: true })
   description: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
-  price: number;
-
-  @Column({ default: 0 })
-  stock: number;
-
-  @Column({ default: true })
-  isActive: boolean;
+  @Column()
+  isbn: string;
 
   @Column({ nullable: true })
-  imageUrl: string;
+  publishedYear: number;
+
+  @Column({ default: true })
+  available: boolean;
+
+  @Column({ nullable: true })
+  coverImageUrl: string;
 
   @ManyToOne(() => Category)
   @JoinColumn({ name: 'categoryId' })

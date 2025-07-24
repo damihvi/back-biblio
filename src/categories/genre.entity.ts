@@ -2,8 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, Up
 import { Book } from '../products/book.entity';
 import { IsString, MaxLength, IsOptional } from 'class-validator';
 
-@Entity('categories')
-export class Category {
+@Entity('genres')
+export class Genre {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -17,11 +17,10 @@ export class Category {
   @IsOptional()
   description: string;
 
-  @Column({ nullable: true })
+  @Column({ unique: true })
   @IsString()
-  @IsOptional()
-  @MaxLength(50)
-  code: string;
+  @MaxLength(100)
+  slug: string;
 
   @Column({ default: true })
   isActive: boolean;
@@ -32,6 +31,6 @@ export class Category {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => Book, book => book.category)
+  @OneToMany(() => Book, book => book.genre)
   books: Book[];
 }
