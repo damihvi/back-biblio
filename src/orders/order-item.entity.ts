@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Product } from '../products/product.entity';
+import { Book } from '../products/book.entity';
 
 @Entity('order_items')
 export class OrderItem {
@@ -9,10 +9,10 @@ export class OrderItem {
   @Column()
   quantity: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
   price: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
   subtotal: number;
 
   @ManyToOne('Order', 'items')
@@ -22,10 +22,10 @@ export class OrderItem {
   @Column()
   orderId: string;
 
-  @ManyToOne(() => Product)
-  @JoinColumn({ name: 'productId' })
-  product: Product;
+  @ManyToOne(() => Book)
+  @JoinColumn({ name: 'bookId' })
+  book: Book;
 
   @Column()
-  productId: string;
+  bookId: string;
 }

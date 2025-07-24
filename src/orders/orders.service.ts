@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './order.entity';
 import { OrderItem } from './order-item.entity';
-import { Product } from '../products/product.entity';
+import { Book } from '../products/book.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 
 export interface CreateOrderDto {
@@ -11,8 +11,8 @@ export interface CreateOrderDto {
   total: number;
   status?: string;
   items: {
-    productId: string;
-    productName?: string;
+    bookId: string;
+    bookTitle?: string;
     quantity: number;
     price?: number;
     subtotal?: number;
@@ -27,8 +27,8 @@ export class OrdersService {
     private readonly orderRepo: Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemRepo: Repository<OrderItem>,
-    @InjectRepository(Product)
-    private readonly productRepo: Repository<Product>,
+    @InjectRepository(Book)
+    private readonly bookRepo: Repository<Book>,
     private readonly analyticsService: AnalyticsService,
   ) {}
 
@@ -48,25 +48,25 @@ export class OrdersService {
     // Crear los items y calcular total
     let calculatedTotal = 0;
     for (const item of items) {
-      const product = await this.productRepo.findOne({ where: { id: item.productId } });
-      if (!product) {
-        console.log(`Product not found: ${item.productId}`);
+      const book = await this.bookRepo.findOne({ where: { id: item.bookId } });
+      if (!book) {
+        console.log(`Book not found: ${item.bookId}`);
         continue;
       }
 
-      const itemPrice = item.price || parseFloat(product.price.toString());
+      const itemPrice = item.price || 0; // Los libros no tienen precio directamente
       const subtotal = item.subtotal || (itemPrice * item.quantity);
       calculatedTotal += subtotal;
 
-      // Actualizar stock del producto
-      product.stock -= item.quantity;
-      await this.productRepo.save(product);
-      console.log(`Updated stock for product ${product.name}: ${product.stock}`);
+      // Actualizar disponibilidad del libro
+      book.available = false; // Marcar como no disponible cuando se agrega a una orden
+      await this.bookRepo.save(book);
+      console.log(`Updated availability for book ${book.title}: ${book.available ? 'Available' : 'Not Available'}`);
 
       // Crear item con ID aleatorio (UUID se genera automáticamente)
       const orderItem = this.orderItemRepo.create({
         orderId: savedOrder.id,
-        productId: item.productId,
+        bookId: item.bookId,
         quantity: item.quantity,
         price: itemPrice,
         subtotal
@@ -89,8 +89,8 @@ export class OrdersService {
     try {
       const mongoItems = items.map(item => ({
         orderId: savedOrder.id,
-        productId: item.productId,
-        productName: item.productName || 'Unknown Product',
+        bookId: item.bookId,
+        bookTitle: item.bookTitle || 'Unknown Book',
         quantity: item.quantity,
         price: item.price || 0,
         subtotal: item.subtotal || 0
@@ -107,7 +107,7 @@ export class OrdersService {
 
   async findAll(): Promise<Order[]> {
     return this.orderRepo.find({
-      relations: ['user', 'items', 'items.product'],
+      relations: ['user', 'items', 'items.book'],
       order: { createdAt: 'DESC' }
     });
   }
@@ -115,14 +115,14 @@ export class OrdersService {
   async findOne(id: string): Promise<Order> {
     return this.orderRepo.findOne({
       where: { id },
-      relations: ['user', 'items', 'items.product']
+      relations: ['user', 'items', 'items.book']
     });
   }
 
   async findByUser(userId: string): Promise<Order[]> {
     return this.orderRepo.find({
       where: { userId },
-      relations: ['items', 'items.product'],
+      relations: ['items', 'items.book'],
       order: { createdAt: 'DESC' }
     });
   }

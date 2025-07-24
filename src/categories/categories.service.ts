@@ -26,14 +26,8 @@ export class CategoriesService {
   }
 
   async create(createCategoryDto: CreateCategoryDto): Promise<Category | null> {
-    const slug = createCategoryDto.name.toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
     const category = this.categoryRepo.create({
       ...createCategoryDto,
-      slug,
       isActive: true
     });
 

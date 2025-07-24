@@ -14,7 +14,7 @@ export class BooksController {
 
   @Get('genre/:genreId')
   async findByGenre(@Param('genreId') genreId: string): Promise<Book[]> {
-    return this.booksService.findByGenre(genreId);
+    return this.booksService.findByCategory(genreId);
   }
 
   @Get(':id')
@@ -37,7 +37,7 @@ export class BooksController {
 
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
-    await this.booksService.remove(id);
+    await this.booksService.delete(id);
   }
 
   @Put(':id/toggle-availability')
