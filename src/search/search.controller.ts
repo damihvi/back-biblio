@@ -1,7 +1,9 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { SearchService } from './search.service';
+import { ApiTags, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('search')
 @Controller('search')
 export class SearchController {
   constructor(
@@ -9,6 +11,9 @@ export class SearchController {
   ) {}
 
   @Get('books')
+  @ApiQuery({ name: 'q', required: false, description: 'Search query for books' })
+  @ApiQuery({ name: 'category', required: false, description: 'Category ID to filter books' })
+  @ApiResponse({ status: 200, description: 'List of books matching the search criteria' })
   async searchBooks(
     @Query('q') query?: string,
     @Query('category') categoryId?: string,
@@ -20,22 +25,16 @@ export class SearchController {
     return this.searchService.searchBooks(query, categoryId, userAgent, ip);
   }
 
-  @Get('categories')
-  async searchCategories(@Query('q') query?: string) {
-    return this.searchService.searchCategories(query);
+  @Get('users')
+  @ApiQuery({ name: 'q', required: true, description: 'Search query for users' })
+  @ApiResponse({ status: 200, description: 'List of users matching the search criteria' })
+  async searchUsers(@Query('q') query: string) {
+    return this.searchService.searchUsers(query);
   }
 
-  @Get('stats')
-  async getStats() {
-    // Get PostgreSQL stats only (MongoDB analytics temporarily disabled)
-    const pgStats = await this.searchService.getStats();
-    
-    return {
-      ...pgStats,
-      analytics: {
-        totalSearches: 0,
-        topQueries: []
-      }
-    };
+  @Get('dashboard')
+  @ApiResponse({ status: 200, description: 'Dashboard statistics including books and users info' })
+  async getDashboardStats() {
+    return this.searchService.getDashboardStats();
   }
 }

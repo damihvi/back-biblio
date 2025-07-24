@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +17,18 @@ async function bootstrap() {
   
   // Set global prefix
   app.setGlobalPrefix('api');
+
+  // Setup Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Biblioteca API')
+    .setDescription('API para el sistema de gestión de biblioteca')
+    .setVersion('1.0')
+    .addTag('books')
+    .addTag('search')
+    .addTag('users')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   // Start server
   const port = process.env.PORT || 3001;
