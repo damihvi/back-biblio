@@ -1,10 +1,9 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { Product } from '../products/product.entity';
+import { Book } from '../products/book.entity';
 import { Category } from '../categories/category.entity';
 import { User } from '../users/user.entity';
-import { Order } from '../orders/order.entity';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -13,8 +12,8 @@ import { SearchAnalytics } from '../analytics/schemas/search-analytics.schema';
 @Injectable()
 export class SearchService {
   constructor(
-    @InjectRepository(Product)
-    private readonly productRepo: Repository<Product>,
+    @InjectRepository(Book)
+    private readonly bookRepo: Repository<Book>,
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
     @InjectRepository(User)

@@ -29,93 +29,94 @@ export class BooksService {
     return null;
   }
 
-  async findAll(): Promise<Product[]> {
-    return this.productRepo.find({
-      relations: ['category'],
-      order: { name: 'ASC' }
+  async findAll(): Promise<Book[]> {
+    return this.bookRepo.find({
+      relations: ['category', 'genre'],
+      order: { title: 'ASC' }
     });
   }
 
-  async findByCategory(categoryId: string): Promise<Product[]> {
-    return this.productRepo.find({
-      where: { categoryId, isActive: true },
-      relations: ['category'],
-      order: { name: 'ASC' }
+  async findByCategory(categoryId: string): Promise<Book[]> {
+    return this.bookRepo.find({
+      where: { categoryId, available: true },
+      relations: ['category', 'genre'],
+      order: { title: 'ASC' }
     });
   }
 
-  async findOne(id: string): Promise<Product | null> {
-    return this.productRepo.findOne({
+  async findOne(id: string): Promise<Book | null> {
+    return this.bookRepo.findOne({
       where: { id },
-      relations: ['category']
+      relations: ['category', 'genre', 'loans']
     });
   }
 
-  async create(createProductDto: CreateProductDto): Promise<Product | null> {
-    const categoryId = await this.resolveCategoryId(createProductDto);
+  async create(createBookDto: CreateBookDto): Promise<Book | null> {
+    const genreId = await this.resolveGenreId(createBookDto);
     
-    if (!categoryId) {
-      throw new Error('Category not found');
+    if (!genreId) {
+      throw new Error('Genre not found');
     }
 
-    const productData = {
-      name: createProductDto.name,
-      description: createProductDto.description,
-      price: createProductDto.price,
-      stock: createProductDto.stock || 0,
-      categoryId,
-      imageUrl: createProductDto.imageUrl,
-      isActive: true
+    const bookData = {
+      title: createBookDto.title,
+      author: createBookDto.author,
+      description: createBookDto.description,
+      isbn: createBookDto.isbn,
+      publisher: createBookDto.publisher,
+      publishedYear: createBookDto.publishedYear,
+      totalCopies: createBookDto.totalCopies || 1,
+      availableCopies: createBookDto.totalCopies || 1,
+      coverImageUrl: createBookDto.coverImageUrl,
+      language: createBookDto.language,
+      pages: createBookDto.pages,
+      location: createBookDto.location,
+      deweyCode: createBookDto.deweyCode,
+      genreId,
+      categoryId: createBookDto.categoryId,
+      available: true
     };
 
-    const product = this.productRepo.create(productData);
-    return this.productRepo.save(product);
+    const book = this.bookRepo.create(bookData);
+    return this.bookRepo.save(book);
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product | null> {
-    const product = await this.findOne(id);
-    if (!product) return null;
+  async update(id: string, updateBookDto: UpdateBookDto): Promise<Book | null> {
+    const book = await this.findOne(id);
+    if (!book) return null;
 
-    // Resolver categoryId si se envió el nombre de la categoría
-    if (updateProductDto.category || updateProductDto.categoryId) {
-      const categoryId = await this.resolveCategoryId(updateProductDto);
-      if (categoryId) {
-        updateProductDto.categoryId = categoryId;
+    if (updateBookDto.genre || updateBookDto.genreId) {
+      const genreId = await this.resolveGenreId(updateBookDto);
+      if (genreId) {
+        updateBookDto.genreId = genreId;
       }
-      // Remover el campo category del DTO para evitar conflictos
-      delete updateProductDto.category;
+      delete updateBookDto.genre;
     }
 
-    if (updateProductDto.name) {
-      const slug = updateProductDto.name.toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-      Object.assign(updateProductDto, { slug });
-    }
-
-    Object.assign(product, updateProductDto);
-    return this.productRepo.save(product);
+    Object.assign(book, updateBookDto);
+    return this.bookRepo.save(book);
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.productRepo.delete(id);
+    const result = await this.bookRepo.delete(id);
     return result.affected > 0;
   }
 
-  async updateStock(id: string, quantity: number): Promise<Product | null> {
-    const product = await this.findOne(id);
-    if (!product) return null;
+  async updateCopies(id: string, quantity: number): Promise<Book | null> {
+    const book = await this.findOne(id);
+    if (!book) return null;
 
-    product.stock = Math.max(0, product.stock + quantity);
-    return this.productRepo.save(product);
+    book.totalCopies = Math.max(0, book.totalCopies + quantity);
+    book.availableCopies = Math.max(0, book.availableCopies + quantity);
+    book.updateAvailability();
+    return this.bookRepo.save(book);
   }
 
-  async toggleActive(id: string): Promise<Product | null> {
-    const product = await this.findOne(id);
-    if (!product) return null;
+  async toggleAvailability(id: string): Promise<Book | null> {
+    const book = await this.findOne(id);
+    if (!book) return null;
 
-    product.isActive = !product.isActive;
-    return this.productRepo.save(product);
+    book.available = !book.available;
+    return this.bookRepo.save(book);
   }
 }

@@ -8,8 +8,8 @@ export class SearchController {
     private readonly searchService: SearchService,
   ) {}
 
-  @Get('products')
-  async searchProducts(
+  @Get('books')
+  async searchBooks(
     @Query('q') query?: string,
     @Query('category') categoryId?: string,
     @Req() req?: Request
@@ -17,7 +17,7 @@ export class SearchController {
     const userAgent = req?.headers['user-agent'];
     const ip = req?.ip || req?.connection?.remoteAddress;
     
-    return this.searchService.searchProducts(query, categoryId, userAgent, ip);
+    return this.searchService.searchBooks(query, categoryId, userAgent, ip);
   }
 
   @Get('categories')
