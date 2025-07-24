@@ -32,7 +32,13 @@ export class BooksService {
   async findAll(): Promise<Book[]> {
     return this.bookRepo.find({
       relations: ['category', 'genre'],
-      order: { title: 'ASC' }
+      select: [
+        'id', 'title', 'author', 'isbn', 'available',
+        'publisher', 'publishedYear', 'coverImageUrl',
+        'categoryId', 'genreId'
+      ],
+      order: { title: 'ASC' },
+      take: 50 // Limitar resultados para evitar sobrecarga de memoria
     });
   }
 
@@ -40,7 +46,13 @@ export class BooksService {
     return this.bookRepo.find({
       where: { categoryId, available: true },
       relations: ['category', 'genre'],
-      order: { title: 'ASC' }
+      select: [
+        'id', 'title', 'author', 'isbn', 'available',
+        'publisher', 'publishedYear', 'coverImageUrl',
+        'categoryId', 'genreId'
+      ],
+      order: { title: 'ASC' },
+      take: 50 // Limitar resultados por categoría
     });
   }
 

@@ -12,7 +12,7 @@ module.exports = {
     out_file: './logs/out.log',
     log_file: './logs/combined.log',
     time: true,
-    max_memory_restart: '1G',
+    max_memory_restart: '512M',
     watch: false,
     ignore_watch: ['node_modules', 'logs'],
     restart_delay: 1000,
