@@ -42,7 +42,6 @@
     "@nestjs/cli": "^10.1.10",
     "@nestjs/schematics": "^10.0.1",
     "@nestjs/testing": "^11.0.0",
-    "rimraf": "^5.0.1",
     "@types/bcrypt": "^5.0.0",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.2",
